@@ -1,9 +1,14 @@
 export default async function handler(req, res) {
+  console.log("API Route Called");
+  console.log("Request body:", JSON.stringify(req.body));
+  console.log("OpenAI API Key exists:", !!process.env.OPENAI_API_KEY);
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
   const { prompt } = req.body;
+
+  console.log("User input:", prompt);
 
   if (!prompt || typeof prompt !== 'string') {
     return res.status(400).json({ error: 'Invalid prompt' });
