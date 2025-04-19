@@ -38,10 +38,10 @@ export default function ChatWidget() {
         {open ? 'Close Assistant' : 'Ask AI'}
       </div>
       {open && (
-        <iframe
-          src="https://YOUR-DEPLOYED-URL/my-assistant"
-          className="chat-widget-iframe"
-        />
+    <iframe
+  src="https://mvp-global.vercel.app/my-assistant"
+  className="chat-widget-iframe"
+/>
       )}
     </>
   );
