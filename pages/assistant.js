@@ -1,87 +1,95 @@
-// pages/assistant.js
 import { useState } from 'react';
 
 export default function Assistant() {
-  const [message, setMessage] = useState('');
+  const [question, setQuestion] = useState('');
   const [response, setResponse] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = async (e) => {
+  const handleAsk = async (e) => {
     e.preventDefault();
-    if (!message.trim()) return;
+    if (!question.trim()) return;
 
-    setIsLoading(true);
+    setLoading(true);
+    setResponse('');
+    setError('');
+
     try {
       const res = await fetch('/api/ask', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ prompt: e }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: question }) // ✅ Key must be "prompt"
       });
 
       if (!res.ok) {
-        throw new Error('Failed to get response');
+        const text = await res.text();
+        throw new Error(text || 'Request failed');
       }
 
       const data = await res.json();
-      setResponse(data.response);
-    } catch (error) {
-      console.error('Error:', error);
-      setResponse('Sorry, there was an error processing your request.');
+      setResponse(data.answer || '[No response]');
+    } catch (err) {
+      console.error('❌ Error:', err);
+      setError(err.message || 'An error occurred');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto', fontFamily: 'sans-serif' }}>
       <h1>MVP Global Assistant</h1>
-      <p>Ask me anything about our products and services.</p>
+      <p>Ask me anything about your business or products.</p>
 
-      <form onSubmit={handleSubmit} style={{ marginTop: '2rem' }}>
+      <form onSubmit={handleAsk} style={{ marginTop: '2rem' }}>
         <div style={{ display: 'flex', gap: '1rem' }}>
           <input
             type="text"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder="Type your question here..."
-            style={{ 
-              flex: 1, 
-              padding: '0.75rem', 
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            placeholder="Type your question..."
+            style={{
+              flex: 1,
+              padding: '0.75rem',
               borderRadius: '0.375rem',
-              border: '1px solid #e2e8f0'
+              border: '1px solid #ccc'
             }}
           />
-          <button 
-            type="submit" 
-            disabled={isLoading}
-            style={{ 
-              padding: '0.75rem 1.5rem', 
-              backgroundColor: '#2563eb', 
-              color: 'white',
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              padding: '0.75rem 1.5rem',
+              backgroundColor: '#2563eb',
+              color: '#fff',
               borderRadius: '0.375rem',
               border: 'none',
-              cursor: isLoading ? 'not-allowed' : 'pointer',
-              opacity: isLoading ? 0.7 : 1
+              cursor: loading ? 'not-allowed' : 'pointer',
+              opacity: loading ? 0.7 : 1
             }}
           >
-            {isLoading ? 'Thinking...' : 'Ask'}
+            {loading ? 'Thinking…' : 'Ask'}
           </button>
         </div>
       </form>
 
       {response && (
-        <div style={{ 
-          marginTop: '2rem', 
-          padding: '1.5rem', 
-          backgroundColor: '#f8fafc',
-          borderRadius: '0.5rem',
-          border: '1px solid #e2e8f0'
-        }}>
+        <div
+          style={{
+            marginTop: '2rem',
+            padding: '1.5rem',
+            backgroundColor: '#f8fafc',
+            borderRadius: '0.5rem',
+            border: '1px solid #e2e8f0'
+          }}
+        >
           <h2 style={{ fontSize: '1.25rem', marginBottom: '0.75rem' }}>Response:</h2>
           <p style={{ lineHeight: '1.6' }}>{response}</p>
         </div>
+      )}
+
+      {error && (
+        <p style={{ marginTop: '1rem', color: 'red' }}>⚠️ {error}</p>
       )}
     </div>
   );
