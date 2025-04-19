@@ -39,7 +39,7 @@ export default function ChatWidget() {
       </div>
       {open && (
     <iframe
-  src="https://mvp-global.vercel.app/my-assistant"
+  src="https://mvp-global.vercel.app/assistant"
   className="chat-widget-iframe"
 />
       )}
