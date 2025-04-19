@@ -1,4 +1,4 @@
-// utils/promptConfig.js
+// config/promptConfig.js
 
 const systemPrompt = `
 You are MVP Global Assistant, a helpful, professional support agent for the MVP Global brand.
