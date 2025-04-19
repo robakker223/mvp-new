@@ -1,26 +1,38 @@
 export default async function handler(req, res) {
-  // Allow only POST requests
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
+    return res.status(405).json({ error: 'Only POST requests allowed' });
   }
 
   const { prompt } = req.body;
-
-  // Validate prompt
-  if (!prompt || typeof prompt !== 'string' || prompt.trim().length === 0) {
-    return res.status(400).json({ error: 'Invalid prompt. Please provide a non-empty string.' });
+  if (!prompt) {
+    return res.status(400).json({ error: 'Missing prompt' });
   }
 
   try {
-    // Example placeholder logic (for now, it just echoes back the prompt)
-    // Later, replace this with a real OpenAI or other LLM call
-    const simulatedResponse = `You asked: "${prompt}". This is where the AI response would go.`;
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages: [{ role: 'user', content: prompt }],
+      })
+    });
 
-    // Success response
-    return res.status(200).json({ answer: simulatedResponse });
+    if (!response.ok) {
+      const error = await response.json();
+      console.error('OpenAI error:', error);
+      return res.status(500).json({ error: 'Failed to get response from OpenAI' });
+    }
 
-  } catch (error) {
-    console.error('API Error in /api/ask:', error);
-    return res.status(500).json({ error: 'An unexpected error occurred while processing your request.' });
+    const data = await response.json();
+    const message = data.choices[0].message.content;
+
+    res.status(200).json({ answer: message });
+  } catch (err) {
+    console.error('❌ Server error:', err);
+    res.status(500).json({ error: 'Server error' });
   }
 }
