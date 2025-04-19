@@ -39,7 +39,7 @@ export default function ChatWidget() {
       </div>
       {open && (
         <iframe
-          src="https://YOUR-DEPLOYED-URL/assistant"
+          src="https://YOUR-DEPLOYED-URL/my-assistant"
           className="chat-widget-iframe"
         />
       )}
