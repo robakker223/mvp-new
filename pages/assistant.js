@@ -1,40 +1,113 @@
-// pages/api/ask.js
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+import { useState } from 'react';
 
-  const { prompt } = req.body;
+export default function Assistant() {
+  const [question, setQuestion] = useState('');
+  const [response, setResponse] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  if (!prompt || typeof prompt !== 'string') {
-    return res.status(400).json({ error: 'Invalid prompt' });
-  }
+  const handleAsk = async (e) => {
+    e.preventDefault();
+    setError('');
+    setResponse('');
 
-  try {
-    const apiRes = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.7
-      })
-    });
-
-    if (!apiRes.ok) {
-      const err = await apiRes.text();
-      return res.status(500).json({ error: 'OpenAI Error: ' + err });
+    if (!question.trim()) {
+      setError('Please enter a question.');
+      return;
     }
 
-    const data = await apiRes.json();
-    const answer = data.choices?.[0]?.message?.content?.trim() || 'No response from model';
+    setLoading(true);
 
-    return res.status(200).json({ answer });
-  } catch (err) {
-    console.error('API Route Error:', err);
-    return res.status(500).json({ error: 'Server error' });
-  }
+    try {
+      const res = await fetch('/api/ask', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ prompt: question })
+      });
+
+      if (!res.ok) {
+        const { error } = await res.json();
+        throw new Error(error || 'Request failed');
+      }
+
+      const data = await res.json();
+      setResponse(data.answer || 'No response received.');
+    } catch (err) {
+      console.error('Client error:', err);
+      setError(err.message || 'Something went wrong.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={styles.container}>
+      <h1>MVP Global Assistant</h1>
+      <p>Ask me anything about your product or service.</p>
+
+      <form onSubmit={handleAsk} style={styles.form}>
+        <input
+          type="text"
+          value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+          placeholder="Type your question..."
+          style={styles.input}
+          disabled={loading}
+        />
+        <button type="submit" disabled={loading} style={styles.button}>
+          {loading ? 'Thinking...' : 'Ask'}
+        </button>
+      </form>
+
+      {response && (
+        <div style={styles.responseBox}>
+          <h3>Response</h3>
+          <p>{response}</p>
+        </div>
+      )}
+
+      {error && (
+        <p style={{ color: 'red', marginTop: '1rem' }}>
+          ⚠️ {error}
+        </p>
+      )}
+    </div>
+  );
 }
+
+const styles = {
+  container: {
+    padding: '2rem',
+    maxWidth: '600px',
+    margin: '0 auto',
+    fontFamily: 'Inter, sans-serif'
+  },
+  form: {
+    display: 'flex',
+    gap: '1rem',
+    marginTop: '1.5rem'
+  },
+  input: {
+    flex: 1,
+    padding: '0.75rem',
+    borderRadius: '8px',
+    border: '1px solid #ccc'
+  },
+  button: {
+    padding: '0.75rem 1.25rem',
+    backgroundColor: '#2563eb',
+    color: 'white',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer'
+  },
+  responseBox: {
+    marginTop: '2rem',
+    padding: '1rem',
+    backgroundColor: '#f9fafb',
+    border: '1px solid #e5e7eb',
+    borderRadius: '8px'
+  }
+};
