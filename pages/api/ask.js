@@ -1,7 +1,14 @@
+// pages/api/ask.js
+
+const systemPrompt =
+  process.env.SYSTEM_PROMPT ||
+  'You are a helpful assistant for MVP Global customers. Answer clearly and concisely.';
+
 export default async function handler(req, res) {
   console.log("API Route Called");
   console.log("Request body:", JSON.stringify(req.body));
   console.log("OpenAI API Key exists:", !!process.env.OPENAI_API_KEY);
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
@@ -23,7 +30,10 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'gpt-3.5-turbo',
-        messages: [{ role: 'user', content: prompt }],
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: prompt }
+        ],
         temperature: 0.7
       })
     });
