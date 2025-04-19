@@ -1,9 +1,7 @@
 // next.config.ts
 const nextConfig = {
   reactStrictMode: true,
-  images: {
-    domains: ['api.microlink.io', 'your-supabase-bucket-url.com'],
-  },
-}
+  // Other safe config options...
+};
 
-export default nextConfig
+export default nextConfig;
