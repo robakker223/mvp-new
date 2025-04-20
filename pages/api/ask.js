@@ -1,4 +1,5 @@
 // pages/api/ask.js
+import { logPrompt } from '../../lib/logger';
 import { systemPrompt } from '../../lib/systemPrompt';
 import { validatePrompt } from '../../lib/validatePrompt';
 import { rateLimit } from '../../lib/rateLimiter';
@@ -20,6 +21,8 @@ export default async function handler(req, res) {
   if (validationError) {
     return res.status(400).json({ error: validationError });
   }
+
+  logPrompt(ip, prompt);
 
   try {
     const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
