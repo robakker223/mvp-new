@@ -1,15 +1,24 @@
 // pages/api/ask.js
 import { systemPrompt } from '../../lib/systemPrompt';
+import { validatePrompt } from '../../lib/validatePrompt';
+import { rateLimit } from '../../lib/rateLimiter';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
+  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+
+  if (!rateLimit(ip)) {
+    return res.status(429).json({ error: 'Too many requests. Please try again later.' });
+  }
+
   const { prompt } = req.body;
 
-  if (!prompt || typeof prompt !== 'string') {
-    return res.status(400).json({ error: 'Invalid prompt' });
+  const validationError = validatePrompt(prompt);
+  if (validationError) {
+    return res.status(400).json({ error: validationError });
   }
 
   try {
