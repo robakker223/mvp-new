@@ -1,18 +1,16 @@
-// pages/api/ask.js
-import { logPrompt } from '../../lib/logger';
-import { validatePrompt } from '../../lib/validatePrompt';
-import { rateLimit } from '../../lib/rateLimiter';
-import { systemPrompt } from '../../lib/systemPrompt';
+// src/pages/api/ask.js
+import { logPrompt } from '@/lib/logger';
+import { validatePrompt } from '@/lib/validatePrompt';
+import { rateLimit } from '@/lib/rateLimiter';
+import { getPromptTemplate } from '@/lib/promptTemplate';
+import { routePrompt } from '@/config/promptRouter'; 
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  const ip =
-    (req.headers['x-forwarded-for'] || '').split(',')[0].trim() ||
-    req.socket?.remoteAddress ||
-    'unknown';
+  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
 
   if (!rateLimit(ip)) {
     return res.status(429).json({ error: 'Too many requests. Please try again later.' });
@@ -27,10 +25,11 @@ export default async function handler(req, res) {
 
   logPrompt(ip, prompt);
 
-  if (!process.env.OPENAI_API_KEY) {
-    console.error('❌ Missing OPENAI_API_KEY');
-    return res.status(500).json({ error: 'Server misconfiguration' });
-  }
+  // Route the prompt to determine the type of task (faq, copywriter, etc.)
+  const task = routePrompt(prompt);
+
+  // Get the system prompt for that task
+  const systemPrompt = getPromptTemplate(task);
 
   try {
     const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -52,18 +51,19 @@ export default async function handler(req, res) {
     const data = await openaiRes.json();
 
     if (!openaiRes.ok) {
-      console.error('🔴 OpenAI Error:', data);
-      return res.status(openaiRes.status).json({ error: data?.error?.message || 'Unknown error' });
+      console.error('OpenAI error:', data);
+      return res.status(openaiRes.status).json({ error: data.error.message });
     }
 
-    const answer = data.choices?.[0]?.message?.content?.trim();
-    if (!answer) {
-      return res.status(500).json({ error: 'No answer returned by AI' });
+    const message = data.choices?.[0]?.message?.content;
+
+    if (!message) {
+      return res.status(500).json({ error: 'No response from OpenAI' });
     }
 
-    return res.status(200).json({ answer });
+    return res.status(200).json({ answer: message });
   } catch (err) {
-    console.error('🔥 Unhandled Error:', err);
-    return res.status(500).json({ error: 'Unexpected server error' });
+    console.error('Server error:', err);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }
